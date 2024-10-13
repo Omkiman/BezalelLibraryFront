@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - The Bezalel Library</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jwt-decode/3.1.2/jwt-decode.min.js"></script>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/S0y2sX1/th.jpg">
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            padding-top: 56px;
+        }
+
+        .navbar {
+            background-color: #1f1f1f;
+        }
+
+        .navbar-brand,
+        .navbar-nav .nav-link {
+            color: #ffffff !important;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #ffcc00 !important;
+        }
+
+        .table {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .btn {
+            margin-right: 10px;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+
+
+    <script>
+        const SERVER = "https://bezalellibrary.onrender.com/";
+        const token = localStorage.getItem('jwt');
+        let editFlag = { "edit": false, "id": null };
+        let bookEditFlag = { "edit": false, "id": null }
+
+        function parseJwt(token) {
+            // Split the JWT into its three parts
+            let base64Url = token.split('.')[1]; // Get the payload part
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Decode the base64 string into a regular string
+            let jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(function (c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    })
+                    .join('')
+            );
+
+            // Parse the string as JSON and return the payload
+            return JSON.parse(jsonPayload);
+        }
+
+
+        // Assuming the JWT token is stored in localStorage
+        if (!token) {
+            // If no token, redirect to login page
+            window.location.href = 'test.html';
+        } else {
+            try {
+                const decodedToken = parseJwt(token);
+                if (!decodedToken.is_admin) {
+
+                    // If the user is not an admin, redirect to home page
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Token decoding failed:', error);
+                // window.location.href = 'index.html'; // Redirect to home
+            }
+        }
+
+        function changeFlag() {
+            editFlag = { "edit": false, "id": null }
+        }
+        function changeBookFlag() {
+            bookEditFlag = { "edit": false, "id": null }
+        }
+        function clearform() {
+            document.getElementById('Username').value = ""
+            document.getElementById('Email').value = ""
+            document.getElementById('IsAdmin').checked = ""
+            document.getElementById('Active').checked = ""
+            document.getElementById('name').value = ""
+            document.getElementById('password').value = ""
+        }
+        function editUser(id) {
+            // Fetch user details using the provided user ID
+            axios.get(`${SERVER}users/${id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    const user = response.data;
+
+                    // Show the modal
+                    $('#userModal').modal('show');
+
+                    // Set form values in the user modal
+                    document.getElementById('Username').value = user.username;
+                    document.getElementById('name').value = user.name;
+                    document.getElementById('Email').value = user.email;
+                    document.getElementById('Active').checked = user.active; // Assuming a checkbox for active status
+                    document.getElementById('IsAdmin').checked = user.is_admin; // Assuming a checkbox for admin status
+                    editFlag = { "edit": true, 'id': id };
+
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                    alert('Could not load user details. Please try again.');
+                });
+        }
+
+        function editBook(id) {
+            // Fetch book details using the provided book ID
+            axios.get(`${SERVER}books/${id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    const book = response.data;
+
+                    // // Set form values in the book modal
+                    // document.getElementById('bookID').value = book.id; // Hidden input for ID
+                    document.getElementById('title').value = book.title;
+                    document.getElementById('author').value = book.author;
+                    document.getElementById('genre').value = book.genre;
+                    document.getElementById('year').value = book.year;
+                    document.getElementById('photo_url').value = book.photo_url;
+                    // document.getElementById('available').checked = book.available; // Checkbox for availability
+                    bookEditFlag = { "edit": true, "id": id }
+
+                    // Show the modal
+                    $('#bookModal').modal('show');
+                })
+                .catch(error => {
+                    console.error('Error fetching book data:', error);
+                    alert('Could not load book details. Please try again.');
+                });
+        }
+    </script>
+
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <a class="navbar-brand" href="#">Admin Dashboard</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="/index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/books.html">Books</a></li>
+                <li class="nav-item"><a class="nav-link" href="/search.html">Search</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">About</a></li>
+                <li class="nav-item" id="borrowsPage" style="display: none;"><a class="nav-link"
+                    href="/borrows.html">My borrows</a></li>
+                <li class="nav-item" id="adminPage" style="display: none;"><a class="nav-link"
+                        href="/admin.html">Admin Page</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="mb-4">Admin Dashboard</h2>
+
+        <!-- Tabs for Users, Books, and Borrows -->
+        <ul class="nav nav-tabs mb-3" id="adminTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="users-tab" data-toggle="tab" href="#users" role="tab">Users</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="books-tab" data-toggle="tab" href="#books" role="tab">Books</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="borrows-tab" data-toggle="tab" href="#borrows" role="tab">Borrows</a>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="adminTabContent">
+            <!-- Users Table -->
+            <div class="tab-pane fade show active" id="users" role="tabpanel">
+                <h3>Manage Users</h3>
+                <button class="btn btn-success mb-3" data-toggle="modal" data-target="#userModal" onclick="changeFlag()">Add User</button>
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Admin</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+            </div>
+
+            <!-- Books Table -->
+            <div class="tab-pane fade" id="books" role="tabpanel">
+                <h3>Manage Books</h3>
+                <button class="btn btn-success mb-3" data-toggle="modal" data-target="#bookModal">Add Book</button>
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Year</th>
+                            <th>Available</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookTable"></tbody>
+                </table>
+            </div>
+
+            <!-- Borrows Table -->
+            <div class="tab-pane fade" id="borrows" role="tabpanel">
+                <h3>Manage Borrows</h3>
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Book</th>
+                            <th>Borrowed At</th>
+                            <th>Returned At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="borrowTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background-color: #1e1e1e; color: #ffffff;">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Add/Edit User</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="Username">
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="text" class="form-control" id="password">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" class="form-control" id="Email">
+                        </div>
+                        <div class="form-group">
+                            <label for="isAdmin">Admin</label>
+                            <input type="checkbox" id="IsAdmin">
+                        </div>
+                        <div class="form-group">
+                            <label for="active">Active</label>
+                            <input type="checkbox" id="Active">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Book Modal -->
+    <div class="modal fade" id="bookModal" tabindex="-1" aria-labelledby="bookModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background-color: #1e1e1e; color: #ffffff;">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookModalLabel">Add/Edit Book</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookForm">
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control" id="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="author">Author</label>
+                            <input type="text" class="form-control" id="author" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="year">Year</label>
+                            <input type="number" class="form-control" id="year" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="genre">Genre</label>
+                            <input type="text" class="form-control" id="genre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="photo_url">Photo URL</label>
+                            <input type="text" class="form-control" id="photo_url" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadUsers();
+            loadBooks();
+            loadBorrows();
+        });
+
+        async function loadUsers() {
+
+            const response = await axios.get(SERVER + 'users',
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            const users = response.data;
+            const userTable = document.getElementById('userTable');
+            userTable.innerHTML = '';
+            users.forEach(user => {
+                userTable.innerHTML += `
+    <tr>
+        <td>${user.id}</td>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>${user.is_admin ? 'Yes' : 'No'}</td>
+        <td>
+            <button class="btn btn-primary" onclick="editUser(${user.id})">Edit</button>
+        </td>
+    </tr>
+    `;
+            });
+        }
+
+        async function loadBooks() {
+            const response = await axios.get(SERVER + 'books', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+
+            });
+            const books = response.data;
+            const bookTable = document.getElementById('bookTable');
+            bookTable.innerHTML = '';
+            books.forEach(book => {
+                bookTable.innerHTML += `
+    <tr>
+        <td>${book.id}</td>
+        <td>${book.title}</td>
+        <td>${book.author}</td>
+        <td>${book.year}</td>
+        <td>${book.available ? 'Yes' : 'No'}</td>
+        <td>
+            <button class="btn btn-primary" onclick="editBook(${book.id})">Edit</button>
+        </td>
+    </tr>
+    `;
+            });
+        }
+        async function loadBorrows() {
+            const response = await axios.get(SERVER + 'borrows',
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            const borrows = response.data;
+            const borrowTable = document.getElementById('borrowTable');
+            borrowTable.innerHTML = '';
+            borrows.forEach(borrow => {
+                borrowTable.innerHTML += `
+                    <tr>
+                        <td>${borrow.id}</td>
+                        <td>${borrow.username}</td>
+                        <td>${borrow.title}</td>
+                        <td>${borrow.borrowed_at}</td>
+                        <td>${borrow.returned_at ? borrow.returned_at : 'Not Returned'}</td>
+                        <td>${borrow.returned_at ? 'Returned' : `
+                            <button class="btn btn-danger" onclick="returnBorrow(${borrow.id})">Return book</button>`}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('userForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const data = {
+                username: document.getElementById('Username').value,
+                email: document.getElementById('Email').value,
+                is_admin: document.getElementById('IsAdmin').checked,
+                active: document.getElementById('Active').checked,
+                name: document.getElementById('name').value,
+                password: document.getElementById('password').value
+            };
+            if (editFlag.edit) {
+                await axios.put(SERVER + 'users/' + editFlag.id, data,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+            } else {
+                await axios.post(SERVER + 'register', data,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+            }
+            $('#userModal').modal('hide');
+            editFlag = { "edit": false, "id": null };
+            clearform()
+            loadUsers();
+        };
+
+        document.getElementById('bookForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                year: document.getElementById('year').value,
+                available: true,
+                photo_url: document.getElementById('photo_url').value,
+                genre: document.getElementById('genre').value
+            };
+            if (bookEditFlag.edit) {
+                await axios.put(SERVER + 'books/' + bookEditFlag.id, data,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                )
+            }
+            else {
+                await axios.post(SERVER + 'books', data,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+            }
+
+            $('#bookModal').modal('hide');
+            bookEditFlag = { "edit": false, "id": null };
+            loadBooks();
+        }
+
+        async function deleteBook(id) {
+            await axios.delete(SERVER + 'books/' + id);
+            loadBooks();
+        }
+
+        async function returnBorrow(id) {
+            await axios.put(SERVER + 'returns/' + id, {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            loadBorrows();
+        }
+    </script>
+</body>
+
+</html>
